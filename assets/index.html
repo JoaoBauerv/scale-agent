@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente de Balança</title>
+<style>
+  :root {
+    --fundo: #0f172a;
+    --cartao: #1e293b;
+    --borda: #334155;
+    --texto: #e2e8f0;
+    --suave: #94a3b8;
+    --verde: #10b981;
+    --vermelho: #ef4444;
+    --ambar: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px;
+    background: var(--fundo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .container { max-width: 620px; margin: 0 auto; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  .subtitulo { color: var(--suave); font-size: .85rem; margin-bottom: 24px; }
+  .cartao {
+    background: var(--cartao);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .rotulo {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--suave);
+    margin-bottom: 6px;
+  }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600; }
+  .bolinha { width: 11px; height: 11px; border-radius: 50%; background: var(--vermelho); }
+  .bolinha.ok { background: var(--verde); box-shadow: 0 0 0 4px rgba(16,185,129,.18); }
+  .peso {
+    font-size: 3.4rem;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    margin: 6px 0;
+  }
+  .peso.instavel { color: var(--ambar); }
+  .marca-estavel { text-align: center; font-size: .8rem; color: var(--suave); min-height: 20px; }
+  .linhas { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; }
+  .linhas div span { display: block; }
+  .valor { font-weight: 600; font-size: .95rem; }
+  .botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    flex: 1 1 auto;
+    min-width: 140px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--borda);
+    background: #0b1220;
+    color: var(--texto);
+    font-size: .88rem;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--verde); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primario { background: var(--verde); border-color: var(--verde); color: #04231a; font-weight: 600; }
+  .erro {
+    background: rgba(239,68,68,.12);
+    border: 1px solid rgba(239,68,68,.4);
+    color: #fecaca;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: .85rem;
+    margin-top: 12px;
+  }
+  .rodape { text-align: center; color: var(--suave); font-size: .75rem; margin-top: 20px; }
+  .rodape a { color: var(--suave); }
+  .oculto { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Integração com Balança</h1>
+  <div class="subtitulo">Agente local — ponte entre a balança e o sistema de reciclagem</div>
+
+  <div class="cartao">
+    <div class="rotulo">Status</div>
+    <div class="status">
+      <span class="bolinha" id="bolinha"></span>
+      <span id="txtStatus">Conectando…</span>
+    </div>
+    <div id="boxErro" class="erro oculto"></div>
+  </div>
+
+  <div class="cartao">
+    <div class="rotulo">Peso atual</div>
+    <div class="peso" id="peso">--,-- kg</div>
+    <div class="marca-estavel" id="marcaEstavel"></div>
+  </div>
+
+  <div class="cartao">
+    <div class="linhas">
+      <div>
+        <span class="rotulo">Modo</span>
+        <span class="valor" id="modo">—</span>
+      </div>
+      <div id="boxPorta">
+        <span class="rotulo">Porta</span>
+        <span class="valor" id="porta">—</span>
+      </div>
+      <div id="boxBaud">
+        <span class="rotulo">Baud rate</span>
+        <span class="valor" id="baud">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <div class="rotulo">Comandos</div>
+    <div class="botoes">
+      <button id="btnGerar" class="oculto">Gerar Peso</button>
+      <button id="btnTara">Aplicar Tara</button>
+      <button id="btnZerar">Zerar Balança</button>
+      <button id="btnModo" class="primario">Alternar Modo</button>
+    </div>
+  </div>
+
+  <div class="rodape">
+    Rotas: <a href="/peso">/peso</a> · <a href="/status">/status</a> · <a href="/portas">/portas</a> · a configuração fica na janela do agente
+  </div>
+
+</div>
+
+<script>
+const el = (id) => document.getElementById(id);
+let modoAtual = null;
+
+function formatar(valor, unidade) {
+  if (valor === null || valor === undefined) return '--,-- ' + (unidade || 'kg');
+  return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (unidade || 'kg');
+}
+
+async function chamar(rota, corpo) {
+  const opcoes = corpo === undefined
+    ? {}
+    : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) };
+  const resposta = await fetch(rota, opcoes);
+  return resposta.json();
+}
+
+async function atualizar() {
+  try {
+    const dados = await chamar('/status');
+    modoAtual = dados.modo;
+    const simulado = dados.modo === 'simulado';
+
+    el('bolinha').classList.toggle('ok', dados.conectada);
+    el('txtStatus').textContent = dados.conectada
+      ? (simulado ? 'Simulação ativa' : 'Conectada')
+      : 'Desconectada';
+
+    el('peso').textContent = formatar(dados.peso, dados.unidade);
+    el('peso').classList.toggle('instavel', dados.conectada && !dados.estavel);
+    el('marcaEstavel').textContent = !dados.conectada ? ''
+      : (dados.estavel ? 'Peso estável — pronto para capturar' : 'Estabilizando…');
+
+    el('modo').textContent = simulado ? 'Balança Simulada' : 'Balança Real';
+    el('btnModo').textContent = simulado ? 'Usar Balança Real' : 'Alternar para Simulada';
+    el('btnGerar').classList.toggle('oculto', !simulado);
+    el('boxPorta').classList.toggle('oculto', simulado);
+    el('boxBaud').classList.toggle('oculto', simulado);
+
+    const conexao = dados.conexao || {};
+    el('porta').textContent = conexao.porta || '—';
+    el('baud').textContent = conexao.baudrate || '—';
+
+    if (dados.erro) {
+      el('boxErro').textContent = '[' + (dados.codigo || 'ERRO') + '] ' + dados.erro;
+      el('boxErro').classList.remove('oculto');
+    } else {
+      el('boxErro').classList.add('oculto');
+    }
+  } catch (e) {
+    el('bolinha').classList.remove('ok');
+    el('txtStatus').textContent = 'Agente indisponível';
+    el('boxErro').textContent = 'Não foi possível falar com o agente. Ele ainda está rodando?';
+    el('boxErro').classList.remove('oculto');
+  }
+}
+
+el('btnGerar').onclick = async () => { await chamar('/simulada/gerar', {}); atualizar(); };
+el('btnTara').onclick  = async () => { await chamar('/tara', {}); atualizar(); };
+el('btnZerar').onclick = async () => { await chamar('/zero', {}); atualizar(); };
+el('btnModo').onclick  = async () => {
+  await chamar('/modo', { modo: modoAtual === 'simulado' ? 'real' : 'simulada' });
+  atualizar();
+};
+
+atualizar();
+setInterval(atualizar, 500);
+</script>
+</body>
+</html>
