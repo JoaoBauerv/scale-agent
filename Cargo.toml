@@ -1,8 +1,8 @@
 [package]
-name = "balanca-agent"
+name = "scale-agent"
 version = "1.0.0"
 edition = "2021"
-description = "Agente de balança para desktop: lê a balança (serial ou simulada) e entrega o peso por HTTP ao sistema web"
+description = "Scale Agent: agente de balança para desktop: lê a balança (serial ou simulada) e entrega o peso por HTTP ao sistema web"
 rust-version = "1.80"
 
 [dependencies]

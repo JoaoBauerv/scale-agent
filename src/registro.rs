@@ -1,4 +1,4 @@
-//! Log do agente: vai para o arquivo (logs/balanca.log), para o console quando
+//! Log do agente: vai para o arquivo (logs/scale-agent.log), para o console quando
 //! há um, e para a aba Log da janela, que guarda as últimas linhas na memória.
 //!
 //! Só as mensagens do próprio agente entram. As bibliotecas de janela e de
@@ -30,7 +30,7 @@ static REGISTRO: OnceLock<Registro> = OnceLock::new();
 
 impl Log for Registro {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.target().starts_with("balanca_agent") && metadata.level() <= log::max_level()
+        metadata.target().starts_with("scale_agent") && metadata.level() <= log::max_level()
     }
 
     fn log(&self, record: &Record) {

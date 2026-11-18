@@ -1,9 +1,9 @@
-//! Agente de Balança — versão desktop em Rust.
+//! Scale Agent — agente de balança para desktop, em Rust.
 //!
-//!     balanca-agent.exe               abre a janela
-//!     balanca-agent.exe --minimizado  abre minimizado (é o que o "Iniciar com o Windows" usa)
-//!     balanca-agent.exe --sem-janela  só a API, sem janela (servidor, testes)
-//!     balanca-agent.exe --aba=configuracoes   abre direto numa aba (configuracoes, integracao, log)
+//!     scale-agent.exe               abre a janela
+//!     scale-agent.exe --minimizado  abre minimizado (é o que o "Iniciar com o Windows" usa)
+//!     scale-agent.exe --sem-janela  só a API, sem janela (servidor, testes)
+//!     scale-agent.exe --aba=configuracoes   abre direto numa aba (configuracoes, integracao, log)
 //!
 //! Sobe a API local (padrão http://127.0.0.1:5000) com as mesmas rotas do
 //! agente Python e a janela de acompanhamento e configuração.
@@ -38,7 +38,7 @@ fn main() -> eframe::Result<()> {
     registro::iniciar(&config::caminho_log(), &cfg.log_nivel);
 
     info!("{}", "=".repeat(58));
-    info!("Agente de balança {} iniciando", env!("CARGO_PKG_VERSION"));
+    info!("Scale Agent {} iniciando", env!("CARGO_PKG_VERSION"));
     info!("Modo: {} | Unidade: {}", cfg.modo_balanca.como_str(), cfg.unidade);
     if cfg.modo_balanca == config::Modo::Real {
         info!("Porta: {} | Baudrate: {}", cfg.porta_com, cfg.baudrate);
@@ -81,14 +81,14 @@ fn main() -> eframe::Result<()> {
 
     let opcoes = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_title("Agente de Balança")
+            .with_title("Scale Agent - Agente de Balança")
             .with_inner_size([980.0, 720.0])
             .with_min_inner_size([760.0, 520.0]),
         ..Default::default()
     };
 
     let app = gui::App::new(Arc::clone(&servico), Arc::clone(&servidor), erro_servidor, cfg, minimizado, aviso, aba);
-    let resultado = eframe::run_native("Agente de Balança", opcoes, Box::new(move |_cc| Ok(Box::new(app))));
+    let resultado = eframe::run_native("Scale Agent", opcoes, Box::new(move |_cc| Ok(Box::new(app))));
 
     if let Some(mut s) = servidor.lock().unwrap().take() {
         s.parar();

@@ -1,4 +1,6 @@
-# Agente de Balança (desktop, Rust)
+# Scale Agent
+
+Agente de balança para desktop, em Rust.
 
 Programa de desktop que fica entre a **balança** (física ou simulada) e o
 **sistema web** de gestão de reciclagem.
@@ -18,7 +20,7 @@ tela de Configurações** — nada de editar `.env`.
 
 ## 1. Usar
 
-Baixe `balanca-agent.exe` (seção *Releases* do GitHub) ou compile (seção 9) e
+Baixe `scale-agent.exe` (seção *Releases* do GitHub) ou compile (seção 9) e
 abra. Na primeira vez ele cria a configuração padrão: balança **simulada** e
 API em `http://127.0.0.1:5000`.
 
@@ -29,7 +31,7 @@ A janela tem quatro abas:
 | **Balança** | Visor ao vivo (verde = estável, amarelo = estabilizando), Gerar peso (simulada), Aplicar tara, Zerar, alternar simulada ⇄ real |
 | **Configurações** | Todos os parâmetros, agrupados como na tela de Configurações do sistema web. **Salvar e aplicar** valida, grava e aplica na hora, sem reiniciar |
 | **Integração** | Exatamente o que preencher no sistema web, com botão de copiar, e a resposta atual de `GET /peso` |
-| **Log** | Últimas mensagens; o arquivo completo fica em `logs/balanca.log` |
+| **Log** | Últimas mensagens; o arquivo completo fica em `logs/scale-agent.log` |
 
 Deixe o agente aberto enquanto o sistema estiver em uso. Marque
 **Configurações → Log e Windows → Iniciar com o Windows** para ele abrir
@@ -65,7 +67,7 @@ Ficam em `config.toml`, nesta ordem de procura:
 
 1. ao lado do `.exe`, se existir um `config.toml` lá (**modo portátil**: leve a
    pasta num pendrive);
-2. senão, `%APPDATA%\BalancaAgent\config.toml`.
+2. senão, `%APPDATA%\ScaleAgent\config.toml`.
 
 Os logs ficam na pasta `logs` do mesmo lugar. O botão **Abrir pasta** da aba
 Configurações abre esse diretório.
@@ -214,7 +216,7 @@ Requer o Rust (<https://rustup.rs>), versão 1.80 ou superior.
 ```bash
 cargo run                 # versão de desenvolvimento, com console mostrando o log
 cargo test                # 43 testes, todos sem hardware
-cargo build --release     # target/release/balanca-agent.exe (~8 MB, sem console)
+cargo build --release     # target/release/scale-agent.exe (~8 MB, sem console)
 ```
 
 Parâmetros de linha de comando:

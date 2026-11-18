@@ -8,7 +8,7 @@ mod imp {
     use winreg::RegKey;
 
     const CHAVE: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
-    const NOME: &str = "BalancaAgent";
+    const NOME: &str = "ScaleAgent";
 
     pub fn ativo() -> bool {
         RegKey::predef(HKEY_CURRENT_USER)

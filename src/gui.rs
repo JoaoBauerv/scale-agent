@@ -171,7 +171,8 @@ impl App {
 
     fn barra_superior(&mut self, ui: &mut Ui, estado: &EstadoPesagem) {
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Agente de Balança").size(18.0).strong());
+            ui.label(RichText::new("Scale Agent").size(18.0).strong());
+            ui.label(RichText::new("agente de balança").weak());
             ui.separator();
 
             let (cor, texto) = if !estado.conectada {

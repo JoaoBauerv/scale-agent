@@ -6,7 +6,7 @@
 //! no padrão com aviso no log, em vez de impedir o agente de abrir.
 //!
 //! Onde fica: se existir um `config.toml` ao lado do executável, ele é usado
-//! (modo portátil, útil num pendrive). Senão, %APPDATA%\BalancaAgent\.
+//! (modo portátil, útil num pendrive). Senão, %APPDATA%\ScaleAgent\.
 
 use std::net::IpAddr;
 use std::path::PathBuf;
@@ -312,7 +312,7 @@ pub fn diretorio_dados() -> PathBuf {
         }
     }
     dirs::config_dir()
-        .map(|d| d.join("BalancaAgent"))
+        .map(|d| d.join("ScaleAgent"))
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
@@ -321,7 +321,7 @@ pub fn caminho_config() -> PathBuf {
 }
 
 pub fn caminho_log() -> PathBuf {
-    diretorio_dados().join("logs").join("balanca.log")
+    diretorio_dados().join("logs").join("scale-agent.log")
 }
 
 /// Lê a configuração. Arquivo ausente vira o padrão (e é criado); arquivo
@@ -359,7 +359,7 @@ pub fn salvar(cfg: &Config) -> std::io::Result<()> {
     }
     let corpo = toml::to_string_pretty(cfg).map_err(std::io::Error::other)?;
     let texto = format!(
-        "# Configuração do Agente de Balança.\n\
+        "# Configuração do Scale Agent (agente de balança).\n\
          # Prefira editar pela janela do agente (aba Configurações): ela valida\n\
          # antes de salvar. Se editar à mão, reabra o agente para aplicar.\n\n{corpo}"
     );
