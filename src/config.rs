@@ -387,6 +387,16 @@ mod testes {
         assert_eq!(toml::from_str::<Config>(&texto).unwrap(), cfg);
     }
 
+    /// O config.toml que vai no zip portátil (pacote/) é o padrão do código,
+    /// só com o endereço do sistema web liberado em origens_permitidas.
+    #[test]
+    fn config_do_pacote_e_o_padrao() {
+        let cfg: Config = toml::from_str(include_str!("../pacote/config.toml")).unwrap();
+        assert_eq!(cfg.validar(), Vec::<String>::new());
+        assert!(cfg.origens_permitidas.starts_with(&Config::default().origens_permitidas));
+        assert_eq!(Config { origens_permitidas: Config::default().origens_permitidas, ..cfg }, Config::default());
+    }
+
     #[test]
     fn campo_ausente_usa_o_padrao() {
         let cfg: Config = toml::from_str("porta_api = 5050").unwrap();

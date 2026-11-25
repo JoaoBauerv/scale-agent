@@ -83,7 +83,11 @@ fn main() -> eframe::Result<()> {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_title("Scale Agent - Agente de Balança")
             .with_inner_size([980.0, 720.0])
-            .with_min_inner_size([760.0, 520.0]),
+            .with_min_inner_size([760.0, 520.0])
+            .with_icon(
+                eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png"))
+                    .expect("ícone embutido inválido"),
+            ),
         ..Default::default()
     };
 

@@ -1,0 +1,53 @@
+# Compila o scale-agent.exe no Windows e publica uma Release com o zip portátil.
+#
+# Para lançar uma versão: crie e envie uma tag que comece com "v"
+#   git tag v1.0.0
+#   git push origin v1.0.0
+# Também dá para rodar à mão em Actions → Release → Run workflow (nesse caso
+# só gera o zip como artefato para baixar, sem criar Release).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Testes
+        run: cargo test --release
+
+      - name: Compilar
+        run: cargo build --release
+
+      - name: Montar zip portátil
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force pacote-saida\ScaleAgent | Out-Null
+          Copy-Item target\release\scale-agent.exe pacote-saida\ScaleAgent\
+          Copy-Item pacote\config.toml pacote-saida\ScaleAgent\
+          Compress-Archive -Path pacote-saida\ScaleAgent -DestinationPath ScaleAgent-portatil.zip
+
+      - name: Guardar como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScaleAgent-portatil
+          path: ScaleAgent-portatil.zip
+
+      - name: Publicar Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ScaleAgent-portatil.zip
+          generate_release_notes: true
