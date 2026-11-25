@@ -32,7 +32,7 @@ impl ServidorApi {
         let ouvinte = TcpListener::bind(endereco).map_err(|e| {
             if e.kind() == std::io::ErrorKind::AddrInUse {
                 format!(
-                    "A porta {} já está em uso. Feche o outro programa (o agente Python, ou outra cópia deste) \
+                    "A porta {} já está em uso. Feche o outro programa (ou outra cópia deste) \
                      ou troque a porta em Configurações.",
                     cfg.porta_api
                 )

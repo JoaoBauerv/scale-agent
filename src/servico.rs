@@ -28,7 +28,7 @@ pub struct EstadoPesagem {
     pub peso: Option<f64>,
     pub unidade: String,
     pub estavel: bool,
-    /// "simulado" ou "real", como no agente Python.
+    /// "simulado" ou "real".
     pub modo: String,
     pub conectada: bool,
     pub erro: Option<String>,
@@ -223,7 +223,7 @@ impl ServicoPesagem {
 
     // ---------------------------------------------------------------- comandos
     /// Troca entre simulada e real sem reiniciar. Não grava na configuração:
-    /// ao reabrir, vale o modo das Configurações, como no agente Python.
+    /// ao reabrir, vale o modo das Configurações.
     pub fn definir_modo(&self, modo: &str) -> Result<EstadoPesagem, String> {
         let desejado = match modo.trim().to_lowercase().as_str() {
             "simulada" | "simulado" => Modo::Simulada,

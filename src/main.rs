@@ -5,8 +5,8 @@
 //!     scale-agent.exe --sem-janela  só a API, sem janela (servidor, testes)
 //!     scale-agent.exe --aba=configuracoes   abre direto numa aba (configuracoes, integracao, log)
 //!
-//! Sobe a API local (padrão http://127.0.0.1:5000) com as mesmas rotas do
-//! agente Python e a janela de acompanhamento e configuração.
+//! Sobe a API local (padrão http://127.0.0.1:5000) e a janela de
+//! acompanhamento e configuração.
 
 // Sem console no Windows na versão final; em debug o console mostra o log.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]

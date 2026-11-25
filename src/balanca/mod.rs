@@ -20,7 +20,7 @@ pub struct LeituraPeso {
 }
 
 pub trait Balanca: Send {
-    /// "simulado" ou "real" — o mesmo texto que o agente Python devolve.
+    /// "simulado" ou "real" — o texto que a API devolve em `modo`.
     fn modo(&self) -> &'static str;
     fn conectar(&mut self) -> Result<(), ErroBalanca>;
     fn desconectar(&mut self);

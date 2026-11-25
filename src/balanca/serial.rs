@@ -6,11 +6,11 @@
 //! extrai o número, regex de estabilidade, fator de divisão e comandos de
 //! zero e tara.
 //!
-//! Diferença em relação ao agente Python: quando a balança transmite sozinha,
-//! os frames se acumulam no buffer da porta entre uma leitura e outra. O Python
-//! lia o mais antigo, e o visor ficava atrasado. Aqui o agente lê tudo o que
-//! chegou e usa o ÚLTIMO frame completo, e descarta o pedaço de frame que
-//! estava no meio do caminho quando a porta foi aberta.
+//! Quando a balança transmite sozinha, os frames se acumulam no buffer da
+//! porta entre uma leitura e outra. Ler o mais antigo deixaria o visor
+//! atrasado, então o agente lê tudo o que chegou e usa o ÚLTIMO frame
+//! completo, e descarta o pedaço de frame que estava no meio do caminho
+//! quando a porta foi aberta.
 
 use std::io::{ErrorKind, Read, Write};
 use std::time::{Duration, Instant};
@@ -59,8 +59,7 @@ impl Protocolo {
         })
     }
 
-    /// Converte um frame cru numa leitura. Bytes fora do ASCII são ignorados,
-    /// como no agente Python.
+    /// Converte um frame cru numa leitura. Bytes fora do ASCII são ignorados.
     pub fn interpretar(&self, bruto: &[u8]) -> Result<LeituraPeso, ErroBalanca> {
         let frame: String = bruto.iter().filter(|b| b.is_ascii()).map(|&b| b as char).collect();
         let frame = frame.trim();

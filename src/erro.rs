@@ -1,5 +1,5 @@
-//! Erros da balança. O `codigo` é o que a API devolve no JSON, igual ao agente
-//! Python, então o sistema web não precisa saber qual dos dois está rodando.
+//! Erros da balança. O `codigo` é o que a API devolve no JSON, para o sistema
+//! web tratar cada situação.
 
 use std::fmt;
 
@@ -10,7 +10,7 @@ pub enum Codigo {
     Timeout,
     DadosInvalidos,
     ComandoNaoSuportado,
-    /// Genérico, mantido para o mesmo conjunto de códigos do agente Python.
+    /// Genérico, para falhas que não se encaixam nos outros códigos.
     #[allow(dead_code)]
     ErroBalanca,
 }

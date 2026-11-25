@@ -2,107 +2,123 @@
 
 Agente de balança para desktop, em Rust.
 
-Programa de desktop que fica entre a **balança** (física ou simulada) e o
-**sistema web** de gestão de reciclagem.
+Programa independente que lê uma **balança** (física, pela porta serial/USB, ou
+simulada) e entrega o peso por uma **API HTTP local**. Qualquer sistema web
+pode usar: o navegador do computador onde a balança está ligado pede o peso ao
+agente e o sistema recebe um JSON pronto.
 
 ```
-BALANÇA FÍSICA ──USB/Serial──▶ AGENTE (este programa) ──HTTP/JSON──▶ NAVEGADOR DO BALCÃO ──▶ SISTEMA WEB
-                               (ou simulada)            127.0.0.1:5000                       (tela de compra/venda)
+BALANÇA ──USB/Serial──▶ SCALE AGENT ──HTTP/JSON──▶ NAVEGADOR ──▶ SEU SISTEMA WEB
+(ou simulada)           127.0.0.1:5000
 ```
 
-É a versão em Rust do `balanca-agent` em Python que acompanha o sistema web: as
-**mesmas rotas, os mesmos campos JSON e os mesmos códigos de erro**, então o
-sistema funciona igual com qualquer um dos dois. A diferença é que este é um
-único `.exe`, sem instalar Python nem dependências, e tem **janela própria com
-tela de Configurações** — nada de editar `.env`.
+É um único `.exe`, sem instalar nada, com **janela própria**: visor ao vivo,
+tela de Configurações com validação, dados de integração prontos para copiar e
+log.
 
 ---
 
 ## 1. Usar
 
-Baixe `scale-agent.exe` (seção *Releases* do GitHub) ou compile (seção 9) e
-abra. Na primeira vez ele cria a configuração padrão: balança **simulada** e
-API em `http://127.0.0.1:5000`.
+Baixe o `ScaleAgent-portatil.zip` na seção
+[*Releases*](https://github.com/JoaoBauerv/scale-agent/releases) do GitHub (ou
+compile, seção 9), extraia e abra o `scale-agent.exe`. Na primeira vez ele usa
+a configuração padrão: balança **simulada** e API em `http://127.0.0.1:5000`.
+
+> O Windows pode mostrar "O Windows protegeu o computador", porque o `.exe`
+> não tem assinatura digital: clique em **Mais informações → Executar assim
+> mesmo**.
 
 A janela tem quatro abas:
 
 | Aba | Para que serve |
 |---|---|
 | **Balança** | Visor ao vivo (verde = estável, amarelo = estabilizando), Gerar peso (simulada), Aplicar tara, Zerar, alternar simulada ⇄ real |
-| **Configurações** | Todos os parâmetros, agrupados como na tela de Configurações do sistema web. **Salvar e aplicar** valida, grava e aplica na hora, sem reiniciar |
-| **Integração** | Exatamente o que preencher no sistema web, com botão de copiar, e a resposta atual de `GET /peso` |
+| **Configurações** | Todos os parâmetros, agrupados por assunto. **Salvar e aplicar** valida, grava e aplica na hora, sem reiniciar |
+| **Integração** | Endereço, rotas e campos que o sistema web usa, com botão de copiar, e a resposta atual de `GET /peso` |
 | **Log** | Últimas mensagens; o arquivo completo fica em `logs/scale-agent.log` |
 
 Deixe o agente aberto enquanto o sistema estiver em uso. Marque
 **Configurações → Log e Windows → Iniciar com o Windows** para ele abrir
 sozinho, minimizado, ao ligar o computador.
 
-## 2. Ligar ao sistema web
+## 2. Integrar com um sistema web
 
-No sistema, entre como administrador → menu do usuário → **Configurações do
-sistema** → **Balança**:
+O sistema web chama o agente a partir do navegador do computador da balança:
 
-| No sistema | Valor |
+```js
+const resposta = await fetch("http://127.0.0.1:5000/peso");
+const dados = await resposta.json();
+if (dados.sucesso && dados.estavel) {
+  campoPeso.value = dados.peso;          // ex.: 125.4
+} else if (!dados.sucesso) {
+  mostrarErro(dados.erro);               // ex.: "Balança offline"
+}
+
+// opcional: registrar no log do agente que o peso foi usado
+await fetch("http://127.0.0.1:5000/captura", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ peso: dados.peso, origem: "tela de pesagem" }),
+});
+```
+
+| O que o sistema precisa saber | Valor padrão |
 |---|---|
-| Usar balança | ligado |
-| Endereço do programa de integração | `http://127.0.0.1:5000` |
-| Rota de leitura do peso | `/peso` |
-| Rota de registro da captura | `/captura` |
-| Campos da resposta | `peso`, `estavel`, `unidade`, `sucesso`, `erro` |
+| Endereço do agente | `http://127.0.0.1:5000` |
+| Rota de leitura do peso | `GET /peso` |
+| Rota de registro da captura | `POST /captura` |
+| Campos da resposta | `sucesso`, `peso`, `unidade`, `estavel`, `erro`, `codigo`, `modo` |
 
-Rotas e campos já são os padrões do sistema; normalmente basta o endereço. Use
-**Testar conexão** na tela do sistema para conferir. A aba **Integração** do
-agente mostra esses valores com a porta que estiver configurada.
+A aba **Integração** mostra esses valores com a porta que estiver configurada.
+Todas as rotas estão na seção 6.
 
-**Sistema publicado na internet** (ex.: Vercel): quem lê a balança é o
-navegador do balcão, então o endereço do sistema precisa estar em
-**Configurações → API local → Origens permitidas** (ex.:
-`https://meusistema.vercel.app`). `localhost` e `127.0.0.1` já vêm liberados. O
-agente também responde à checagem de *Private Network Access* do Chrome, que
-bloqueia sites da internet de chamar `127.0.0.1` sem permissão explícita.
+**Sistema publicado na internet** (ex.: Vercel): o endereço do sistema precisa
+estar em **Configurações → API local → Origens permitidas** (ex.:
+`https://meusistema.vercel.app`), senão o navegador bloqueia a chamada
+(CORS). `localhost` e `127.0.0.1` já vêm liberados. O agente também responde à
+checagem de *Private Network Access* do Chrome, que bloqueia sites da internet
+de chamar `127.0.0.1` sem permissão explícita.
 
 ## 3. Configurações
 
 Ficam em `config.toml`, nesta ordem de procura:
 
 1. ao lado do `.exe`, se existir um `config.toml` lá (**modo portátil**: leve a
-   pasta num pendrive);
+   pasta num pendrive — é assim que vem o zip da Release);
 2. senão, `%APPDATA%\ScaleAgent\config.toml`.
 
 Os logs ficam na pasta `logs` do mesmo lugar. O botão **Abrir pasta** da aba
 Configurações abre esse diretório.
 
-São os mesmos parâmetros do `.env` do agente Python, com os nomes em
-minúsculas:
-
-| Chave (`config.toml`) | No `.env` do Python | Padrão | O que é |
-|---|---|---|---|
-| `modo_balanca` | `MODO_BALANCA` | `simulada` | `simulada` ou `real` ao abrir |
-| `unidade` | `UNIDADE` | `kg` | |
-| `host` / `porta_api` | `HOST` / `PORTA_API` | `127.0.0.1` / `5000` | onde a API sobe |
-| `origens_permitidas` | `ORIGENS_PERMITIDAS` | `http://localhost,http://127.0.0.1` | CORS; vírgula ou uma por linha; `*` libera tudo |
-| `permitir_rede` | `PERMITIR_REDE` | `false` | `false` = só aceita chamadas deste computador |
-| `api_token` | `API_TOKEN` | vazio | protege `/zero`, `/tara`, `/modo` e `/simulada/gerar` (header `X-API-Token`) |
-| `intervalo_atualizacao` | `INTERVALO_ATUALIZACAO` | `0.5` | segundos entre leituras |
-| `tolerancia_estabilidade` | `TOLERANCIA_ESTABILIDADE` | `0.05` | variação máxima para contar como parado |
-| `tempo_estabilidade` | `TEMPO_ESTABILIDADE` | `1.5` | segundos parado para ser estável |
-| `casas_decimais` | `CASAS_DECIMAIS` | `2` | |
-| `sim_peso_minimo` / `sim_peso_maximo` | `SIM_PESO_MINIMO` / `SIM_PESO_MAXIMO` | `0` / `200` | faixa do Gerar peso |
-| `sim_peso_inicial` | `SIM_PESO_INICIAL` | `0` | |
-| `sim_resolucao` | `SIM_RESOLUCAO` | `0.10` | divisão da balança simulada |
-| `porta_com` | `PORTA_COM` | `COM3` | |
-| `baudrate` / `bytesize` | `BAUDRATE` / `BYTESIZE` | `9600` / `8` | |
-| `paridade` | `PARIDADE` | `N` | `N`, `E` ou `O` |
-| `stopbits` | `STOPBITS` | `1` | `1` ou `2` |
-| `timeout` | `TIMEOUT` | `1.0` | segundos esperando um frame completo |
-| `comando_peso` | `COMANDO_PESO` | vazio | o que enviar para pedir o peso; vazio = balança transmite sozinha |
-| `terminador` | `TERMINADOR` | `\r\n` | fim de cada frame |
-| `protocolo_regex` | `PROTOCOLO_REGEX` | `([-+]?\d+[.,]?\d*)` | o grupo 1 (ou `(?P<peso>...)`) é o peso |
-| `protocolo_regex_estavel` | `PROTOCOLO_REGEX_ESTAVEL` | vazio | ex.: `^ST`; vazio = o agente calcula |
-| `fator_divisao` | `FATOR_DIVISAO` | `1` | `012540` com fator `100` = 125,40 |
-| `comando_zero` / `comando_tara` | `COMANDO_ZERO` / `COMANDO_TARA` | vazio | vazio = `COMANDO_NAO_SUPORTADO` |
-| `log_nivel` | `LOG_NIVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
-| `iniciar_com_windows` | — | `false` | grava/remove o agente em `HKCU\...\Run` |
+| Chave (`config.toml`) | Padrão | O que é |
+|---|---|---|
+| `modo_balanca` | `simulada` | `simulada` ou `real` ao abrir |
+| `unidade` | `kg` | |
+| `host` / `porta_api` | `127.0.0.1` / `5000` | onde a API sobe |
+| `origens_permitidas` | `http://localhost,http://127.0.0.1` | CORS; vírgula ou uma por linha; `*` libera tudo |
+| `permitir_rede` | `false` | `false` = só aceita chamadas deste computador |
+| `api_token` | vazio | protege `/zero`, `/tara`, `/modo` e `/simulada/gerar` (header `X-API-Token`) |
+| `intervalo_atualizacao` | `0.5` | segundos entre leituras |
+| `tolerancia_estabilidade` | `0.05` | variação máxima para contar como parado |
+| `tempo_estabilidade` | `1.5` | segundos parado para ser estável |
+| `casas_decimais` | `2` | |
+| `sim_peso_minimo` / `sim_peso_maximo` | `0` / `200` | faixa do Gerar peso |
+| `sim_peso_inicial` | `0` | |
+| `sim_resolucao` | `0.10` | divisão da balança simulada |
+| `porta_com` | `COM3` | |
+| `baudrate` / `bytesize` | `9600` / `8` | |
+| `paridade` | `N` | `N`, `E` ou `O` |
+| `stopbits` | `1` | `1` ou `2` |
+| `timeout` | `1.0` | segundos esperando um frame completo |
+| `comando_peso` | vazio | o que enviar para pedir o peso; vazio = balança transmite sozinha |
+| `terminador` | `\r\n` | fim de cada frame |
+| `protocolo_regex` | `([-+]?\d+[.,]?\d*)` | o grupo 1 (ou `(?P<peso>...)`) é o peso |
+| `protocolo_regex_estavel` | vazio | ex.: `^ST`; vazio = o agente calcula |
+| `fator_divisao` | `1` | `012540` com fator `100` = 125,40 |
+| `comando_zero` / `comando_tara` | vazio | vazio = `COMANDO_NAO_SUPORTADO` |
+| `log_nivel` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `iniciar_com_windows` | `false` | grava/remove o agente em `HKCU\...\Run` |
 
 Comandos e terminador aceitam os escapes `\r`, `\n`, `\t`, `\0`, `\\` e `\xHH`.
 
@@ -152,13 +168,11 @@ Exemplo — balança que envia `ST,GS,+  125.40 kg\r\n`:
 
 **Leitura contínua:** quando a balança transmite sozinha, os frames se
 acumulam na porta entre uma leitura e outra. O agente lê tudo o que chegou e
-usa o **último** frame completo (o Python usava o mais antigo, e o visor ficava
-atrasado), e descarta o pedaço de frame que estava no meio do caminho quando a
+usa o **último** frame completo (assim o visor nunca fica atrasado), e descarta o pedaço de frame que estava no meio do caminho quando a
 porta foi aberta.
 
-**Regex:** é a sintaxe do crate `regex` do Rust, igual à do Python para tudo o
-que um frame de balança precisa (grupos, `(?P<nome>...)`, classes, âncoras),
-mas sem *lookaround* (`(?=...)`, `(?<=...)`) nem referências para trás (`\1`).
+**Regex:** é a sintaxe do crate `regex` do Rust, que cobre tudo o que um
+frame de balança precisa (grupos, `(?P<nome>...)`, classes, âncoras), mas sem *lookaround* (`(?=...)`, `(?<=...)`) nem referências para trás (`\1`).
 
 ## 6. API
 
@@ -172,7 +186,7 @@ mas sem *lookaround* (`(?=...)`, `(?<=...)`) nem referências para trás (`\1`).
 | `/tara` | POST | Aplica tara |
 | `/modo` | POST | Alterna simulada ⇄ real — `{"modo": "real"}` |
 | `/simulada/gerar` | POST | Novo peso na simulação — `{"peso": 137.8}` ou sem corpo para sortear |
-| `/captura` | POST | Registra no log que o sistema capturou o peso — `{"peso": 12.5, "origem": "tela de compra"}` |
+| `/captura` | POST | Registra no log que o sistema capturou o peso — `{"peso": 12.5, "origem": "tela de pesagem"}` |
 
 ```json
 { "sucesso": true, "peso": 125.40, "unidade": "kg", "estavel": true, "modo": "real", "erro": null, "codigo": null }
@@ -193,7 +207,7 @@ A aba **Balança** mostra o código do erro e o que costuma causá-lo.
 | Sintoma | Provável causa |
 |---|---|
 | Painel não aparece no sistema web | Agente fechado, endereço errado no sistema, ou origem do sistema fora de *Origens permitidas* |
-| "API parada" no topo da janela | Porta em uso (outro agente, inclusive o Python, aberto) — troque a porta ou feche o outro |
+| "API parada" no topo da janela | Porta em uso (outra cópia do agente ou outro programa aberto) — troque a porta ou feche o outro |
 | `PORTA_INDISPONIVEL` | Porta errada, cabo solto, ou outro programa usando a porta |
 | `TIMEOUT` | Balança desligada, baudrate ou terminador errado, ou ela só responde depois do comando de peso |
 | `DADOS_INVALIDOS` | A regex não bate com o frame — use *Testar protocolo* |
@@ -215,7 +229,7 @@ Requer o Rust (<https://rustup.rs>), versão 1.80 ou superior.
 
 ```bash
 cargo run                 # versão de desenvolvimento, com console mostrando o log
-cargo test                # 43 testes, todos sem hardware
+cargo test                # 44 testes, todos sem hardware
 cargo build --release     # target/release/scale-agent.exe (~8 MB, sem console)
 ```
 
@@ -226,6 +240,16 @@ Parâmetros de linha de comando:
 | `--minimizado` | abre minimizado (usado pelo *Iniciar com o Windows*) |
 | `--sem-janela` | só a API, sem janela |
 | `--aba=configuracoes` | abre direto numa aba (`configuracoes`, `integracao`, `log`) |
+
+Versões novas são compiladas pelo GitHub Actions
+(`.github/workflows/release.yml`): ao enviar uma tag `v*`, ele roda os testes,
+compila no Windows e publica a Release com o zip portátil (`.exe` +
+`pacote/config.toml`).
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
 
 ## 10. Estrutura
 
@@ -245,4 +269,6 @@ src/
     ├── simulada.rs    balança sem hardware
     └── serial.rs      porta COM e protocolo configurável
 assets/index.html      página de acompanhamento servida em /
+assets/icon.ico/.png   ícone do executável e da janela
+pacote/config.toml     configuração que vai no zip da Release
 ```

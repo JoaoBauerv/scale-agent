@@ -1,10 +1,10 @@
 //! Janela do agente.
 //!
 //! - Balança: visor ao vivo e os comandos (gerar peso, tara, zero, modo).
-//! - Configurações: tudo o que o agente Python lia do .env, validado antes de
-//!   salvar e aplicado na hora, sem reiniciar.
-//! - Integração: o que preencher na tela Configurações do sistema do sistema
-//!   web para ele achar este agente.
+//! - Configurações: todos os parâmetros, validados antes de salvar e
+//!   aplicados na hora, sem reiniciar.
+//! - Integração: o endereço, as rotas e os campos que o sistema web usa para
+//!   falar com este agente.
 //! - Log: as últimas mensagens.
 //!
 //! Comandos que falam com a balança rodam fora da thread da janela: com a
@@ -621,15 +621,14 @@ impl App {
         cartao(ui, |ui| {
             ui.label(RichText::new("Ligar ao sistema web").size(16.0).strong());
             ui.label(
-                "No sistema, entre como administrador, abra o menu do usuário > Configurações do sistema > Balança \
-                 e preencha assim. Rotas e campos já são os padrões do sistema: na maioria dos casos basta o endereço.",
+                "O sistema web chama este agente pelo navegador do computador da balança. \
+                 Use estes valores na configuração de balança do seu sistema.",
             );
             ui.add_space(6.0);
 
             let intervalo_ms = ((cfg.intervalo_atualizacao * 1000.0).round() as u32).max(300).to_string();
-            let valores: [(&str, String); 10] = [
-                ("Usar balança", "ligado".into()),
-                ("Endereço do programa de integração", url.clone()),
+            let valores: [(&str, String); 9] = [
+                ("Endereço do agente", url.clone()),
                 ("Rota de leitura do peso", "/peso".into()),
                 ("Rota de registro da captura", "/captura".into()),
                 ("Intervalo entre leituras", format!("{intervalo_ms} ms")),

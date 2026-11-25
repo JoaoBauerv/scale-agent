@@ -1,8 +1,7 @@
 //! Rotas HTTP consumidas pelo sistema web e pela página de acompanhamento.
 //!
-//! Mesmas rotas, mesmos campos e mesmos códigos HTTP do agente Python: o
-//! sistema web lê `sucesso`, `peso`, `unidade`, `estavel` e `erro` em GET /peso
-//! e avisa em POST /captura, e funciona igual com qualquer um dos dois.
+//! O sistema web lê `sucesso`, `peso`, `unidade`, `estavel` e `erro` em
+//! GET /peso e pode avisar em POST /captura quando usar o peso.
 
 use std::net::SocketAddr;
 use std::sync::Arc;

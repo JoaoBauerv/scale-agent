@@ -1,7 +1,6 @@
 //! Configuração do agente.
 //!
-//! São os mesmos parâmetros do `.env` do agente Python, com os mesmos nomes em
-//! minúsculas, gravados em `config.toml`. Quem edita é a tela Configurações da
+//! Os parâmetros ficam gravados em `config.toml`. Quem edita é a tela Configurações da
 //! janela; o arquivo pode ser editado à mão, e o que estiver inválido nele cai
 //! no padrão com aviso no log, em vez de impedir o agente de abrir.
 //!
